@@ -22,16 +22,23 @@ public class UserService {
         this.userRepository = userRepository;
     }
 
-    public void addUser(UserDTO user) {
-        Optional<UserModel> userOptional = userRepository.findByUsername(user.getUsername());
-        if (userOptional.isPresent()) {
-            throw new UsernameNotFoundException("Username already exists");
+//    public void addUser(UserDTO user) {
+//        Optional<UserModel> userOptional = userRepository.findByUsername(user.getUsername());
+//        if (userOptional.isPresent()) {
+//            throw new UsernameNotFoundException("Username already exists");
+//        }
+//        UserModel model = new UserModel();
+//        model.setUsername(user.getUsername());
+//        model.setPassword(user.getPassword());
+//        model.setRole(Role.valueOf(user.getRole()));
+//        userRepository.save(model);
+//    }
+
+    public UserModel create(UserModel user){
+        if (userRepository.existsByUsername(user.getUsername())){
+            throw new RuntimeException("Такой пользователь уже существует");
         }
-        UserModel model = new UserModel();
-        model.setUsername(user.getUsername());
-        model.setPassword(user.getPassword());
-        model.setRole(Role.valueOf(user.getRole()));
-        userRepository.save(model);
+        return save(user);
     }
 
     public UserModel getByUsername(String username) {
@@ -63,8 +70,8 @@ public class UserService {
         userRepository.deleteById(id);
     }
 
-    public void save(UserModel user){
-        userRepository.save(user);
+    public UserModel save(UserModel user){
+        return userRepository.save(user);
     }
 
     //дать права администратора текущему пользователю
