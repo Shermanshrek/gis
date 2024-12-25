@@ -32,6 +32,9 @@ public class UserModel implements UserDetails {
     @Column(name = "role", nullable = false)
     private Role role;
 
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL)
+    private List<LayerModel> layers;
+
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities(){
         return List.of(new SimpleGrantedAuthority(role.name()));
