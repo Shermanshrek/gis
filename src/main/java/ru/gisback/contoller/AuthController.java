@@ -19,8 +19,7 @@ public class AuthController {
     @PostMapping("/auth/sign-in")
     public ResponseEntity<JwtAuthenticationResponse> signIn(@RequestBody SignInRequest request) {
         try {
-            authenticationService.signIn(request);
-            return ResponseEntity.ok().build();
+            return ResponseEntity.ok().body(authenticationService.signIn(request));
         } catch (Exception e) {
             return ResponseEntity.badRequest().build();
         }
