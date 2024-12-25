@@ -8,6 +8,7 @@ import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
+import ru.gisback.model.UserModel;
 
 import java.security.Key;
 import java.util.Date;
@@ -40,7 +41,6 @@ public class JwtService {
         Map<String, Object> claims = new HashMap<>();
         if (userDetails instanceof UserModel customUserDetails) {
             claims.put("id", customUserDetails.getId());
-            claims.put("email", customUserDetails.getEmail());
             claims.put("role", customUserDetails.getRole());
         }
         return generateToken(claims, userDetails);
