@@ -5,9 +5,9 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
-import ru.gisback.dto.UserDTO;
 import ru.gisback.model.UserModel;
 import ru.gisback.model.Role;
+import ru.gisback.repositories.LayerRepo;
 import ru.gisback.repositories.UserRepo;
 
 import java.util.List;
@@ -16,10 +16,12 @@ import java.util.Optional;
 @Service
 public class UserService {
     private final UserRepo userRepository;
+    private final LayerRepo layerRepo;
 
     @Autowired
-    public UserService(UserRepo userRepository) {
+    public UserService(UserRepo userRepository, LayerRepo layerRepo) {
         this.userRepository = userRepository;
+        this.layerRepo = layerRepo;
     }
 
 //    public void addUser(UserDTO user) {
@@ -38,6 +40,7 @@ public class UserService {
         if (userRepository.existsByUsername(user.getUsername())){
             throw new RuntimeException("Такой пользователь уже существует");
         }
+        user.setLayers(layerRepo.findAllByRole(user.getRole()));
         return save(user);
     }
 

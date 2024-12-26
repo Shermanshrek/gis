@@ -1,6 +1,5 @@
 package ru.gisback.services;
 
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -9,7 +8,6 @@ import org.springframework.stereotype.Service;
 import ru.gisback.dto.JwtAuthenticationResponse;
 import ru.gisback.dto.SignInRequest;
 import ru.gisback.dto.SignUpRequest;
-import ru.gisback.dto.UserDTO;
 import ru.gisback.model.Role;
 import ru.gisback.model.UserModel;
 
@@ -41,7 +39,7 @@ public class AuthenticationService {
         var user = UserModel.builder()
                 .username(signUpRequest.getUsername())
                 .password(passwordEncoder.encode(signUpRequest.getPassword()))
-                .role(Role.ROLE_LEVEL1)
+                .role(Role.valueOf(signUpRequest.getRole()))
                 .build();
         userService.create(user);
         var jwt = jwtService.generateToken(user);

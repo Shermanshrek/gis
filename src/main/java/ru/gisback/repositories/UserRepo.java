@@ -1,6 +1,7 @@
 package ru.gisback.repositories;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import ru.gisback.model.LayerModel;
 import ru.gisback.model.UserModel;
 
 import java.util.Optional;
