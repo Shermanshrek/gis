@@ -5,7 +5,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RestController;
-import ru.gisback.model.LayerModel;
+import ru.gisback.model.Layer;
 import ru.gisback.services.TestService;
 
 import java.util.List;
@@ -30,7 +30,7 @@ public class TestController {
     }
 
     @GetMapping("/test/get-all")
-    public ResponseEntity<List<LayerModel>> testGetAll(){
+    public ResponseEntity<List<Layer>> testGetAll(){
         try {
             return ResponseEntity.ok(testService.getLayers());
         } catch (Exception e) {
@@ -39,7 +39,7 @@ public class TestController {
     }
 
     @GetMapping("/test/get-layer-by-access/{id}")
-    public ResponseEntity<List<LayerModel>> getLayerByAccess(@PathVariable Long id){
+    public ResponseEntity<List<Layer>> getLayerByAccess(@PathVariable Long id){
         try {
             return ResponseEntity.ok(testService.getAccessibleLayers(id));
         } catch (Exception e) {

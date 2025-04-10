@@ -5,13 +5,16 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
-import ru.gisback.model.UserModel;
+import ru.gisback.dto.LayerDTO;
+import ru.gisback.dto.UserDTO;
+import ru.gisback.model.User;
 import ru.gisback.model.Role;
 import ru.gisback.repositories.LayerRepo;
 import ru.gisback.repositories.UserRepo;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 public class UserService {
@@ -36,7 +39,7 @@ public class UserService {
 //        userRepository.save(model);
 //    }
 
-    public UserModel create(UserModel user){
+    public User create(User user){
         if (userRepository.existsByUsername(user.getUsername())){
             throw new RuntimeException("Такой пользователь уже существует");
         }
@@ -44,7 +47,7 @@ public class UserService {
         return save(user);
     }
 
-    public UserModel getByUsername(String username) {
+    public User getByUsername(String username) {
         return userRepository.findByUsername(username).orElseThrow(() -> new UsernameNotFoundException("Пользователь не найден"));
     }
 
@@ -52,19 +55,22 @@ public class UserService {
         return this::getByUsername;
     }
 
-    public UserModel getCurrentUser() {
+    public User getCurrentUser() {
         var username = SecurityContextHolder.getContext().getAuthentication().getName();
         return getByUsername(username);
     }
 
-    public List<UserModel> getAllUsers() {
-        return userRepository.findAll();
+    public List<UserDTO> getAllUsers() {
+        List<User> users = userRepository.findAll();
+        return users.stream()
+                .map(UserDTO::toDTO)
+                .collect(Collectors.toList());
     }
 
     public void setRole(String username, String role) {
-        Optional<UserModel> user = userRepository.findByUsername(username);
+        Optional<User> user = userRepository.findByUsername(username);
         if (user.isPresent()) {
-            UserModel model = user.get();
+            User model = user.get();
             model.setRole(Role.valueOf(role));
         } else throw new RuntimeException("Пользователь не найден");
     }
@@ -73,7 +79,7 @@ public class UserService {
         userRepository.deleteById(id);
     }
 
-    public UserModel save(UserModel user){
+    public User save(User user){
         return userRepository.save(user);
     }
 

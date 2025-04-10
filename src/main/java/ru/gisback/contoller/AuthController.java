@@ -14,7 +14,7 @@ import ru.gisback.services.AuthenticationService;
 @RestController
 @RequiredArgsConstructor
 public class AuthController {
-    private final AuthenticationService authenticationService;;
+    private final AuthenticationService authenticationService;
 
     @PostMapping("/auth/sign-in")
     public ResponseEntity<JwtAuthenticationResponse> signIn(@RequestBody SignInRequest request) {
@@ -26,7 +26,7 @@ public class AuthController {
     }
 
     @PostMapping("/auth/sign-up")
-    public ResponseEntity<JwtAuthenticationResponse> signUp (@RequestBody @Valid SignUpRequest request){
+    public ResponseEntity<JwtAuthenticationResponse> signUp(@RequestBody @Valid SignUpRequest request) {
         try {
             return ResponseEntity.ok().body(authenticationService.signUp(request));
         } catch (Exception e) {

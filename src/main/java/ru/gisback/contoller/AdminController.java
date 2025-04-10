@@ -3,7 +3,8 @@ package ru.gisback.contoller;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import ru.gisback.model.UserModel;
+import ru.gisback.dto.UserDTO;
+import ru.gisback.model.User;
 import ru.gisback.services.AuthenticationService;
 import ru.gisback.services.UserService;
 
@@ -16,7 +17,7 @@ public class AdminController {
     private final AuthenticationService authenticationService;
 
     @GetMapping("/admin/get-all-users")
-    public ResponseEntity<List<UserModel>> getAllUsers() {
+    public ResponseEntity<List<UserDTO>> getAllUsers() {
         try {
             return ResponseEntity.ok(userService.getAllUsers());
         } catch (Exception e) {
@@ -25,7 +26,7 @@ public class AdminController {
     }
 
     @PostMapping("/admin/set-role/{username}")
-    public ResponseEntity setRole(@PathVariable String username, @RequestBody String role) {
+    public ResponseEntity<Void> setRole(@PathVariable String username, @RequestBody String role) {
         try {
             userService.setRole(username, role);
             return ResponseEntity.ok().build();
@@ -35,7 +36,7 @@ public class AdminController {
     }
 
     @DeleteMapping("/admin/delete-user/{id}")
-    public ResponseEntity deleteUser(@PathVariable Long id) {
+    public ResponseEntity<Void> deleteUser(@PathVariable Long id) {
         try {
             userService.deleteUser(id);
             return ResponseEntity.ok().build();

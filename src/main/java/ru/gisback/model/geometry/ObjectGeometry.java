@@ -5,7 +5,7 @@ import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import ru.gisback.model.LayerModel;
+import ru.gisback.model.Layer;
 
 import java.util.List;
 
@@ -26,9 +26,9 @@ public class ObjectGeometry {
     @ManyToOne
     @JoinColumn(name = "layer_id")
     @JsonIgnoreProperties("objects")
-    private LayerModel layer;
+    private Layer layer;
 
-    public ObjectGeometry(String description, List<Double> points, LayerModel layer, int dimension) {
+    public ObjectGeometry(String description, List<Double> points, Layer layer, int dimension) {
         this.description = description;
         this.points = points;
         this.layer = layer;

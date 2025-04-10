@@ -2,9 +2,10 @@ package ru.gisback.services;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import ru.gisback.model.LayerModel;
+import ru.gisback.dto.LayerDTO;
+import ru.gisback.model.Layer;
 import ru.gisback.model.Role;
-import ru.gisback.model.UserModel;
+import ru.gisback.model.User;
 import ru.gisback.repositories.LayerRepo;
 import ru.gisback.repositories.UserRepo;
 
@@ -17,19 +18,19 @@ public class LayerService {
     private final LayerRepo layerRepo;
     private final UserRepo userRepo;
 
-    @Autowired
     public LayerService(LayerRepo layerRepo, UserRepo userRepo) {
         this.layerRepo = layerRepo;
         this.userRepo = userRepo;
     }
 
-    public void addLayer(String name) {
-        Optional<LayerModel> layer = layerRepo.findByLayerName(name);
+    public void addLayer(String name, String role) {
+        Optional<Layer> layer = layerRepo.findByLayerName(name);
         if (layer.isPresent()) {
             throw new RuntimeException("Layer already exists");
         }
-        LayerModel layerModel = new LayerModel();
+        Layer layerModel = new Layer();
         layerModel.setLayerName(name);
+        layerModel.setRole(Role.valueOf(role));
         layerRepo.save(layerModel);
     }
 
@@ -37,16 +38,15 @@ public class LayerService {
         return userRole.ordinal() >= layerRole.ordinal();
     }
 
-    public List<LayerModel> getAccessibleLayers(Long id) {
-        Optional<UserModel> user = userRepo.findById(id);
-        Role userRole;
-        if(user.isPresent()){
-            userRole = user.get().getRole();
-        }
-        else throw new RuntimeException("User not found");
-        List<LayerModel> allLayers = layerRepo.findAll(); // Получите все слои
+    public List<LayerDTO> getAccessibleLayers(Long userId) {
+        User user = userRepo.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        List<Layer> allLayers = layerRepo.findAll();
+
         return allLayers.stream()
-                .filter(layer -> hasAccess(userRole, layer.getRole())) // Фильтруйте по доступу
+                .filter(layer -> hasAccess(user.getRole(), layer.getRole()))
+                .map(LayerDTO::toDTO)
                 .collect(Collectors.toList());
     }
 }

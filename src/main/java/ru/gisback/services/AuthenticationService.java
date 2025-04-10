@@ -9,7 +9,7 @@ import ru.gisback.dto.JwtAuthenticationResponse;
 import ru.gisback.dto.SignInRequest;
 import ru.gisback.dto.SignUpRequest;
 import ru.gisback.model.Role;
-import ru.gisback.model.UserModel;
+import ru.gisback.model.User;
 
 @Service
 @RequiredArgsConstructor
@@ -25,18 +25,16 @@ public class AuthenticationService {
                 request.getUsername(),
                 request.getPassword()
         ));
-
         var user = userService
                 .userDetailsService()
                 .loadUserByUsername(request.getUsername());
-
         var jwt = jwtService.generateToken(user);
         System.out.println(jwt);
         return new JwtAuthenticationResponse(jwt);
     }
     //регистрация пользователя
     public JwtAuthenticationResponse signUp(SignUpRequest signUpRequest){
-        var user = UserModel.builder()
+        var user = User.builder()
                 .username(signUpRequest.getUsername())
                 .password(passwordEncoder.encode(signUpRequest.getPassword()))
                 .role(Role.valueOf(signUpRequest.getRole()))

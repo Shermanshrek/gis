@@ -1,12 +1,11 @@
 package ru.gisback.repositories;
 
 import org.springframework.data.jpa.repository.JpaRepository;
-import ru.gisback.model.LayerModel;
-import ru.gisback.model.UserModel;
+import ru.gisback.model.User;
 
 import java.util.Optional;
 
-public interface UserRepo extends JpaRepository<UserModel, Long> {
-    Optional<UserModel> findByUsername(String username);
+public interface UserRepo extends JpaRepository<User, Long> {
+    Optional<User> findByUsername(String username);
     boolean existsByUsername(String username);
 }

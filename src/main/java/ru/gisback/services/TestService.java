@@ -2,9 +2,9 @@ package ru.gisback.services;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import ru.gisback.model.LayerModel;
+import ru.gisback.model.Layer;
 import ru.gisback.model.Role;
-import ru.gisback.model.UserModel;
+import ru.gisback.model.User;
 import ru.gisback.model.geometry.ObjectGeometry;
 import ru.gisback.repositories.LayerRepo;
 import ru.gisback.repositories.ObjectGeometryRepo;
@@ -28,8 +28,8 @@ public class TestService {
         this.userRepo = userRepo;
     }
     public void test(){
-        LayerModel layer = new LayerModel();
-        LayerModel layer2 = new LayerModel();
+        Layer layer = new Layer();
+        Layer layer2 = new Layer();
         layer.setLayerName("test");
         layer2.setLayerName("test2");
         layer2.setRole(Role.ROLE_LEVEL2);
@@ -43,7 +43,7 @@ public class TestService {
         objectGeometryRepo.save(point2);
         objectGeometryRepo.save(point3);
     }
-    public List<LayerModel> getLayers(){
+    public List<Layer> getLayers(){
        return layerRepo.findAll();
     }
 
@@ -51,14 +51,14 @@ public class TestService {
         return userRole.ordinal() >= layerRole.ordinal();
     }
 
-    public List<LayerModel> getAccessibleLayers(Long id) {
-        Optional<UserModel> user = userRepo.findById(id);
+    public List<Layer> getAccessibleLayers(Long id) {
+        Optional<User> user = userRepo.findById(id);
         Role userRole;
         if(user.isPresent()){
             userRole = user.get().getRole();
         }
         else throw new RuntimeException("User not found");
-        List<LayerModel> allLayers = layerRepo.findAll(); // Получите все слои
+        List<Layer> allLayers = layerRepo.findAll(); // Получите все слои
         return allLayers.stream()
                 .filter(layer -> hasAccess(userRole, layer.getRole())) // Фильтруйте по доступу
                 .collect(Collectors.toList());
