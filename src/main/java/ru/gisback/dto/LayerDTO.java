@@ -6,7 +6,6 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import ru.gisback.model.Layer;
 import ru.gisback.model.Role;
-import ru.gisback.model.geometry.ObjectGeometry;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -18,19 +17,19 @@ import java.util.stream.Collectors;
 public class LayerDTO {
     private Long id;
     private String layerName;
-    private Role requiredRole;
-    private List<Long> objectIds;
+    private Role role;
+    private List<ObjectGeometryDTO> objects;
 
     public static LayerDTO toDTO(Layer layer) {
         LayerDTO dto = new LayerDTO();
         dto.setId(layer.getId());
         dto.setLayerName(layer.getLayerName());
-        dto.setRequiredRole(layer.getRole());
+        dto.setRole(layer.getRole());
 
         if (layer.getObjects() != null) {
-            dto.setObjectIds(
+            dto.setObjects(
                     layer.getObjects().stream()
-                            .map(ObjectGeometry::getId)
+                            .map(ObjectGeometryDTO::toDTO)
                             .collect(Collectors.toList())
             );
         }
@@ -41,7 +40,7 @@ public class LayerDTO {
         Layer layer = new Layer();
         layer.setId(this.id);
         layer.setLayerName(this.layerName);
-        layer.setRole(this.requiredRole);
+        layer.setRole(this.role);
         return layer;
     }
 }

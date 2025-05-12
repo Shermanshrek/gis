@@ -34,6 +34,14 @@ public class User implements UserDetails {
     )
     private List<Layer> layers;
 
+    // User.java
+    @OneToOne(mappedBy = "user",
+            cascade = CascadeType.ALL,
+            orphanRemoval = true,
+            fetch = FetchType.LAZY)
+    private RefreshToken refreshToken;
+
+
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities(){
         return List.of(new SimpleGrantedAuthority(role.name()));

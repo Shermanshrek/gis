@@ -18,14 +18,14 @@ import java.util.stream.Collectors;
 public class UserDTO {
     private Long id;
     private String username;
-    private Role role;
+    private String role;
     private List<Long> layerIds;
 
     public static UserDTO toDTO(User user) {
         UserDTO dto = new UserDTO();
         dto.setId(user.getId());
         dto.setUsername(user.getUsername());
-        dto.setRole(user.getRole());
+        dto.setRole(user.getRole().name());
 
         if (user.getLayers() != null) {
             dto.setLayerIds(
@@ -41,7 +41,7 @@ public class UserDTO {
         User user = new User();
         user.setId(this.id);
         user.setUsername(this.username);
-        user.setRole(this.role);
+        user.setRole(Role.valueOf(this.role));
         return user;
     }
 }

@@ -1,93 +1,99 @@
 package ru.gisback.services;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
-import ru.gisback.dto.LayerDTO;
+import org.springframework.transaction.annotation.Transactional;
 import ru.gisback.dto.UserDTO;
+import ru.gisback.model.Layer;
 import ru.gisback.model.User;
 import ru.gisback.model.Role;
 import ru.gisback.repositories.LayerRepo;
 import ru.gisback.repositories.UserRepo;
 
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
-public class UserService {
+public class UserService implements UserDetailsService {
     private final UserRepo userRepository;
     private final LayerRepo layerRepo;
 
-    @Autowired
     public UserService(UserRepo userRepository, LayerRepo layerRepo) {
         this.userRepository = userRepository;
         this.layerRepo = layerRepo;
     }
 
-//    public void addUser(UserDTO user) {
-//        Optional<UserModel> userOptional = userRepository.findByUsername(user.getUsername());
-//        if (userOptional.isPresent()) {
-//            throw new UsernameNotFoundException("Username already exists");
-//        }
-//        UserModel model = new UserModel();
-//        model.setUsername(user.getUsername());
-//        model.setPassword(user.getPassword());
-//        model.setRole(Role.valueOf(user.getRole()));
-//        userRepository.save(model);
-//    }
-
-    public User create(User user){
-        if (userRepository.existsByUsername(user.getUsername())){
-            throw new RuntimeException("Такой пользователь уже существует");
+    @Transactional
+    public User create(User user) {
+        if (userRepository.existsByUsername(user.getUsername())) {
+            throw new IllegalArgumentException("User with this username already exists");
         }
+
+        if (user.getRole() == null) {
+            user.setRole(Role.ROLE_LEVEL1);
+        }
+
         user.setLayers(layerRepo.findAllByRole(user.getRole()));
-        return save(user);
-    }
-
-    public User getByUsername(String username) {
-        return userRepository.findByUsername(username).orElseThrow(() -> new UsernameNotFoundException("Пользователь не найден"));
-    }
-
-    public UserDetailsService userDetailsService() {
-        return this::getByUsername;
-    }
-
-    public User getCurrentUser() {
-        var username = SecurityContextHolder.getContext().getAuthentication().getName();
-        return getByUsername(username);
-    }
-
-    public List<UserDTO> getAllUsers() {
-        List<User> users = userRepository.findAll();
-        return users.stream()
-                .map(UserDTO::toDTO)
-                .collect(Collectors.toList());
-    }
-
-    public void setRole(String username, String role) {
-        Optional<User> user = userRepository.findByUsername(username);
-        if (user.isPresent()) {
-            User model = user.get();
-            model.setRole(Role.valueOf(role));
-        } else throw new RuntimeException("Пользователь не найден");
-    }
-
-    public void deleteUser(Long id) {
-        userRepository.deleteById(id);
-    }
-
-    public User save(User user){
         return userRepository.save(user);
     }
 
-    //дать права администратора текущему пользователю
-    @Deprecated
-    public void getAdmin() {
-        var user = getCurrentUser();
-        user.setRole(Role.ROLE_ADMIN);
-        save(user);
+    @Transactional(readOnly = true)
+    public User getByUsername(String username) {
+        return userRepository.findByUsername(username)
+                .orElseThrow(() -> new UsernameNotFoundException("User not found: " + username));
+    }
+
+    @Override
+    public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
+        return getByUsername(username);
+    }
+
+    @Transactional(readOnly = true)
+    public User getCurrentUser() {
+        String username = SecurityContextHolder.getContext().getAuthentication().getName();
+        return getByUsername(username);
+    }
+
+    @Transactional(readOnly = true)
+    public List<UserDTO> getAllUsers() {
+        return userRepository.findAll().stream()
+                .map(this::convertToDTO)
+                .collect(Collectors.toList());
+    }
+
+    @Transactional
+    public void updateUserRole(Long userId, Role role) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new UsernameNotFoundException("User not found: " + userId));
+
+        user.setRole(role);
+        user.setLayers(layerRepo.findAllByRole(role));
+        userRepository.save(user);
+    }
+
+    @Transactional
+    public void deleteUser(Long id) {
+        if (!userRepository.existsById(id)) {
+            throw new IllegalArgumentException("User not found with id: " + id);
+        }
+        userRepository.deleteById(id);
+    }
+
+    private UserDTO convertToDTO(User user) {
+        return new UserDTO(
+                user.getId(),
+                user.getUsername(),
+                user.getRole().name(),
+                user.getLayers().stream()
+                        .map(Layer::getId)
+                        .collect(Collectors.toList())
+        );
+    }
+
+    public UserDTO getUserDTO(User user) {
+        return convertToDTO(user);
     }
 }

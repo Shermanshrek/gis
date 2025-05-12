@@ -28,12 +28,12 @@ public class ObjectGeometry {
     @JsonIgnoreProperties("objects")
     private Layer layer;
 
+    private int dimension;
+
     public ObjectGeometry(String description, List<Double> points, Layer layer, int dimension) {
         this.description = description;
         this.points = points;
         this.layer = layer;
         this.dimension = dimension;
     }
-
-    private int dimension;
 }

@@ -11,6 +11,7 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 @Getter
+@Table(name = "layer_model")
 public class Layer {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

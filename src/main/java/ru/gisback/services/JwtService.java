@@ -1,134 +1,168 @@
 package ru.gisback.services;
 
-import io.jsonwebtoken.Claims;
-import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.SignatureAlgorithm;
+import io.jsonwebtoken.*;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
+import lombok.Data;
+import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 import ru.gisback.model.User;
+import ru.gisback.model.Role;
 
-import java.security.Key;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
+import javax.crypto.SecretKey;
+import java.util.*;
 import java.util.function.Function;
 
+@Slf4j
 @Service
+@Data
 public class JwtService {
-    @Value("${token.signing.key}")
-    private String jwtSigningKey;
 
-    /**
-     * Извлечение имени пользователя из токена
-     *
-     * @param token токен
-     * @return имя пользователя
-     */
-    public String extractUserName(String token) {
+    @Value("${jwt.secret}")
+    private String secretKey;
+
+    @Value("${jwt.access-expiration}")
+    private long accessExpiration;
+
+    @Getter
+    @Value("${jwt.refresh-expiration}")
+    private long refreshExpiration;
+
+    // Генерация access токена
+    public String generateAccessToken(UserDetails userDetails) {
+        if (!(userDetails instanceof User user)) {
+            throw new IllegalArgumentException("Invalid user type");
+        }
+        validateUser(user);
+        return buildAccessToken(user);
+    }
+
+    // Генерация refresh токена
+    public String generateRefreshToken(UserDetails userDetails) {
+        return Jwts.builder()
+                .subject(userDetails.getUsername())
+                .issuedAt(new Date())
+                .expiration(new Date(System.currentTimeMillis() + refreshExpiration))
+                .claim("token_id", UUID.randomUUID().toString())
+                .claim("type", "refresh")
+                .signWith(getSignInKey(), Jwts.SIG.HS256)
+                .compact();
+    }
+
+    private String buildAccessToken(User user) {
+        Map<String, Object> claims = new HashMap<>();
+        claims.put("type", "access");
+        claims.put("role", user.getRole().name());
+        claims.put("user_id", user.getId());
+
+        // Добавляем информацию о слоях, если необходимо
+        if(user.getLayers() != null && !user.getLayers().isEmpty()) {
+            claims.put("layers", user.getLayers().stream()
+                    .map(layer -> layer.getId().toString())
+                    .toList());
+        }
+
+        return Jwts.builder()
+                .claims(claims)
+                .subject(user.getUsername())
+                .issuedAt(new Date())
+                .expiration(new Date(System.currentTimeMillis() + accessExpiration))
+                .signWith(getSignInKey(), Jwts.SIG.HS256)
+                .compact();
+    }
+
+    // Валидация токена
+    public boolean isTokenValid(String token, UserDetails userDetails) {
+        try {
+            final String username = extractUsername(token);
+            final String tokenType = extractClaim(token, claims -> claims.get("type", String.class));
+
+            return username.equals(userDetails.getUsername())
+                    && !isTokenExpired(token)
+                    && isValidTokenType(tokenType)
+                    && isUserConsistent(token, (User) userDetails);
+        } catch (JwtException | IllegalArgumentException e) {
+            log.warn("Invalid JWT token: {}", e.getMessage());
+            return false;
+        }
+    }
+
+    // Извлечение информации из токена
+    public String extractUsername(String token) {
         return extractClaim(token, Claims::getSubject);
     }
 
-    /**
-     * Генерация токена
-     *
-     * @param userDetails данные пользователя
-     * @return токен
-     */
-    public String generateToken(UserDetails userDetails) {
-        Map<String, Object> claims = new HashMap<>();
-        if (userDetails instanceof User customUserDetails) {
-            claims.put("id", customUserDetails.getId());
-            claims.put("role", customUserDetails.getRole());
-        }
-        return generateToken(claims, userDetails);
+    public Long extractUserId(String token) {
+        return extractClaim(token, claims -> claims.get("user_id", Long.class));
     }
 
-    public String extractRole(String token) {
-        Claims claims = extractAllClaims(token);
-        return claims.get("role", String.class);
+    public Role extractUserRole(String token) {
+        String role = extractClaim(token, claims -> claims.get("role", String.class));
+        return Role.valueOf(role);
     }
 
-
-    /**
-     * Проверка токена на валидность
-     *
-     * @param token       токен
-     * @param userDetails данные пользователя
-     * @return true, если токен валиден
-     */
-    public boolean isTokenValid(String token, UserDetails userDetails) {
-        final String userName = extractUserName(token);
-        return (userName.equals(userDetails.getUsername())) && !isTokenExpired(token);
-    }
-
-    /**
-     * Извлечение данных из токена
-     *
-     * @param token           токен
-     * @param claimsResolvers функция извлечения данных
-     * @param <T>             тип данных
-     * @return данные
-     */
-    public <T> T extractClaim(String token, Function<Claims, T> claimsResolvers) {
+    public <T> T extractClaim(String token, Function<Claims, T> claimsResolver) {
         final Claims claims = extractAllClaims(token);
-        return claimsResolvers.apply(claims);
+        return claimsResolver.apply(claims);
     }
 
-    /**
-     * Генерация токена
-     *
-     * @param extraClaims дополнительные данные
-     * @param userDetails данные пользователя
-     * @return токен
-     */
-    private String generateToken(Map<String, Object> extraClaims, UserDetails userDetails) {
-        return Jwts.builder().setClaims(extraClaims).setSubject(userDetails.getUsername())
-                .setIssuedAt(new Date(System.currentTimeMillis()))
-                .setExpiration(new Date(System.currentTimeMillis() + 100000 * 60 * 24))
-                .signWith(getSigningKey(), SignatureAlgorithm.HS256).compact();
+    private Claims extractAllClaims(String token) {
+        try {
+            return Jwts.parser()
+                    .verifyWith(getSignInKey())
+                    .build()
+                    .parseSignedClaims(token)
+                    .getPayload();
+        } catch (ExpiredJwtException ex) {
+            log.error("Token expired: {}", ex.getMessage());
+            throw new JwtException("Token expired");
+        } catch (UnsupportedJwtException ex) {
+            log.error("Unsupported JWT: {}", ex.getMessage());
+            throw new JwtException("Unsupported token");
+        } catch (MalformedJwtException ex) {
+            log.error("Malformed JWT: {}", ex.getMessage());
+            throw new JwtException("Invalid token format");
+        } catch (SecurityException ex) {
+            log.error("Invalid signature: {}", ex.getMessage());
+            throw new JwtException("Invalid token signature");
+        } catch (IllegalArgumentException ex) {
+            log.error("Empty claims: {}", ex.getMessage());
+            throw new JwtException("Token claims are empty");
+        }
     }
 
-    /**
-     * Проверка токена на просроченность
-     *
-     * @param token токен
-     * @return true, если токен просрочен
-     */
+    private SecretKey getSignInKey() {
+        byte[] keyBytes = Decoders.BASE64.decode(secretKey);
+        return Keys.hmacShaKeyFor(keyBytes);
+    }
+
     private boolean isTokenExpired(String token) {
         return extractExpiration(token).before(new Date());
     }
 
-    /**
-     * Извлечение даты истечения токена
-     *
-     * @param token токен
-     * @return дата истечения
-     */
     private Date extractExpiration(String token) {
         return extractClaim(token, Claims::getExpiration);
     }
 
-    /**
-     * Извлечение всех данных из токена
-     *
-     * @param token токен
-     * @return данные
-     */
-    private Claims extractAllClaims(String token) {
-        return Jwts.parser().setSigningKey(getSigningKey()).build().parseClaimsJws(token)
-                .getBody();
+    private boolean isValidTokenType(String tokenType) {
+        return "access".equals(tokenType) || "refresh".equals(tokenType);
     }
 
-    /**
-     * Получение ключа для подписи токена
-     *
-     * @return ключ
-     */
-    private Key getSigningKey() {
-        byte[] keyBytes = Decoders.BASE64.decode(jwtSigningKey);
-        return Keys.hmacShaKeyFor(keyBytes);
+    private boolean isUserConsistent(String token, User user) {
+        return extractUserId(token).equals(user.getId())
+                && extractUserRole(token).equals(user.getRole());
+    }
+
+    private void validateUser(User user) {
+        if (user.getRole() == null) {
+            throw new IllegalStateException("User role must be defined");
+        }
+        if (user.getUsername() == null || user.getUsername().isEmpty()) {
+            throw new IllegalStateException("Username must be defined");
+        }
     }
 }

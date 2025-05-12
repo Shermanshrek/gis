@@ -1,12 +1,15 @@
 package ru.gisback.services;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import ru.gisback.dto.LayerDTO;
+import ru.gisback.dto.ObjectGeometryDTO;
 import ru.gisback.model.Layer;
 import ru.gisback.model.Role;
 import ru.gisback.model.User;
 import ru.gisback.repositories.LayerRepo;
+import ru.gisback.repositories.ObjectGeometryRepo;
 import ru.gisback.repositories.UserRepo;
 
 import java.util.List;
@@ -14,14 +17,12 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
+@RequiredArgsConstructor
 public class LayerService {
     private final LayerRepo layerRepo;
     private final UserRepo userRepo;
+    private final ObjectGeometryRepo objectGeometryRepo;
 
-    public LayerService(LayerRepo layerRepo, UserRepo userRepo) {
-        this.layerRepo = layerRepo;
-        this.userRepo = userRepo;
-    }
 
     public void addLayer(String name, String role) {
         Optional<Layer> layer = layerRepo.findByLayerName(name);
@@ -49,4 +50,25 @@ public class LayerService {
                 .map(LayerDTO::toDTO)
                 .collect(Collectors.toList());
     }
+
+    public List<ObjectGeometryDTO> getLayerObjects(Long layerId) {
+        return objectGeometryRepo.findByLayerId(layerId).stream()
+                .map(ObjectGeometryDTO::toDTO)
+                .collect(Collectors.toList());
+    }
+
+    public LayerDTO createLayer(LayerDTO dto){
+        addLayer(dto.getLayerName(), dto.getRole().name());
+        // возвращаем только что сохранённый слой
+        return layerRepo.findByLayerName(dto.getLayerName())
+                .map(LayerDTO::toDTO)
+                .orElseThrow();
+    }
+
+    public List<LayerDTO> getAllLayers() {
+        return layerRepo.findAll().stream()
+                .map(LayerDTO::toDTO)
+                .collect(Collectors.toList());
+    }
+
 }
