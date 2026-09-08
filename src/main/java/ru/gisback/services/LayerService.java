@@ -25,9 +25,12 @@ public class LayerService {
 
 
     public void addLayer(String name, String role) {
+        if (name == null || name.isBlank()) {
+            throw new IllegalArgumentException("Layer name must not be blank");
+        }
         Optional<Layer> layer = layerRepo.findByLayerName(name);
         if (layer.isPresent()) {
-            throw new RuntimeException("Layer already exists");
+            throw new IllegalArgumentException("Layer already exists: " + name);
         }
         Layer layerModel = new Layer();
         layerModel.setLayerName(name);
@@ -58,7 +61,10 @@ public class LayerService {
     }
 
     public LayerDTO createLayer(LayerDTO dto){
-        addLayer(dto.getLayerName(), dto.getRole().name());
+        // роль определяет, каким пользователям виден слой; если фронт её не прислал —
+        // берём самый низкий уровень (виден всем)
+        Role role = dto.getRole() != null ? dto.getRole() : Role.ROLE_LEVEL1;
+        addLayer(dto.getLayerName(), role.name());
         // возвращаем только что сохранённый слой
         return layerRepo.findByLayerName(dto.getLayerName())
                 .map(LayerDTO::toDTO)

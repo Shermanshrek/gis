@@ -29,8 +29,11 @@ public class LayerController {
     @PreAuthorize("hasAuthority('ROLE_ADMIN')")
     @PostMapping
     public ResponseEntity<LayerDTO> createLayer(@RequestBody LayerDTO dto){
-        LayerDTO saved = layerService.createLayer(dto);
-        return ResponseEntity.ok(saved);
+        try {
+            return ResponseEntity.ok(layerService.createLayer(dto));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().build();
+        }
     }
 
     @GetMapping("/get-layer-by-access/me")
