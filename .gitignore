@@ -4,6 +4,12 @@ target/
 !**/src/main/**/target/
 !**/src/test/**/target/
 src/main/resources/application.properties
+src/main/resources/application-local.*
+
+### Секреты / переменные окружения ###
+.env
+.env.*
+!.env.example
 
 ### STS ###
 .apt_generated
