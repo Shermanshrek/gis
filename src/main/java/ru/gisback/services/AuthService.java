@@ -32,7 +32,15 @@ public class AuthService {
             throw new IllegalArgumentException("Username already exists");
         }
 
-        Role role = Role.valueOf(request.getRole());
+        if (request.getRole() == null) {
+            throw new IllegalArgumentException("Role is required");
+        }
+        Role role;
+        try {
+            role = Role.valueOf(request.getRole());
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException("Unknown role: " + request.getRole());
+        }
 
         User user = User.builder()
                 .username(request.getUsername())

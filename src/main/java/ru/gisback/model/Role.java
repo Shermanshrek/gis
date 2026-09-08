@@ -1,8 +1,6 @@
 package ru.gisback.model;
 
 public enum Role {
-    ROLE_LEVEL1,
-    ROLE_LEVEL2,
-    ROLE_LEVEL3,
+    ROLE_USER,
     ROLE_ADMIN
 }

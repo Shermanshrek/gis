@@ -24,7 +24,4 @@ public class Layer {
 
     @OneToMany(mappedBy = "layer")
     private List<ObjectGeometry> objects;
-
-    @Enumerated(EnumType.STRING)
-    private Role role;
 }

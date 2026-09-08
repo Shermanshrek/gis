@@ -8,7 +8,8 @@ spring:
   jpa:
     hibernate:
       ddl-auto: ${JPA_DDL_AUTO:update}
-    open-in-view: false
+    # код обращается к ленивым коллекциям (Layer.objects, User.layers) в контроллерах/DTO
+    open-in-view: true
     properties:
       hibernate:
         format_sql: true
@@ -22,7 +23,7 @@ server:
 # (Base64-строка, декодируется в ключ не короче 32 байт для HS256).
 jwt:
   secret: ${JWT_SECRET}
-  access-expiration: ${JWT_ACCESS_EXPIRATION:900000}      # 15 минут
+  access-expiration: ${JWT_ACCESS_EXPIRATION:3600000}     # 1 час
   refresh-expiration: ${JWT_REFRESH_EXPIRATION:604800000} # 7 дней
 
 springdoc:

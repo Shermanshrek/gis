@@ -50,4 +50,18 @@ public class AdminController {
         userService.deleteUser(id);
         return ResponseEntity.noContent().build();
     }
+
+    @Operation(summary = "Выдать пользователю доступ к слою")
+    @PostMapping("/users/{userId}/layers/{layerId}")
+    public ResponseEntity<Void> grantLayer(@PathVariable Long userId, @PathVariable Long layerId) {
+        userService.grantLayer(userId, layerId);
+        return ResponseEntity.noContent().build();
+    }
+
+    @Operation(summary = "Отозвать у пользователя доступ к слою")
+    @DeleteMapping("/users/{userId}/layers/{layerId}")
+    public ResponseEntity<Void> revokeLayer(@PathVariable Long userId, @PathVariable Long layerId) {
+        userService.revokeLayer(userId, layerId);
+        return ResponseEntity.noContent().build();
+    }
 }

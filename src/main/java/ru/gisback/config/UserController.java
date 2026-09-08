@@ -18,7 +18,7 @@ public class UserController {
 
     @GetMapping
     public ResponseEntity<UserDTO> getCurrentUser(@AuthenticationPrincipal User user){
-        return ResponseEntity.ok(userService.getUserDTO(user));
+        return ResponseEntity.ok(userService.getCurrentUserDTO(user.getUsername()));
     }
 }
 

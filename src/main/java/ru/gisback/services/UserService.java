@@ -13,6 +13,7 @@ import ru.gisback.model.Role;
 import ru.gisback.repositories.LayerRepo;
 import ru.gisback.repositories.UserRepo;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -33,10 +34,9 @@ public class UserService implements UserDetailsService {
         }
 
         if (user.getRole() == null) {
-            user.setRole(Role.ROLE_LEVEL1);
+            user.setRole(Role.ROLE_USER);
         }
 
-        user.setLayers(layerRepo.findAllByRole(user.getRole()));
         return userRepository.save(user);
     }
 
@@ -57,6 +57,12 @@ public class UserService implements UserDetailsService {
         return getByUsername(username);
     }
 
+    /** DTO текущего пользователя; собирается внутри транзакции — ленивый layers доступен */
+    @Transactional(readOnly = true)
+    public UserDTO getCurrentUserDTO(String username) {
+        return convertToDTO(getByUsername(username));
+    }
+
     @Transactional(readOnly = true)
     public List<UserDTO> getAllUsers() {
         return userRepository.findAll().stream()
@@ -70,8 +76,35 @@ public class UserService implements UserDetailsService {
                 .orElseThrow(() -> new UsernameNotFoundException("User not found: " + userId));
 
         user.setRole(role);
-        user.setLayers(layerRepo.findAllByRole(role));
         userRepository.save(user);
+    }
+
+    /** выдать пользователю доступ к слою */
+    @Transactional
+    public void grantLayer(Long userId, Long layerId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("User not found: " + userId));
+        Layer layer = layerRepo.findById(layerId)
+                .orElseThrow(() -> new IllegalArgumentException("Layer not found: " + layerId));
+
+        if (user.getLayers() == null) {
+            user.setLayers(new ArrayList<>());
+        }
+        if (user.getLayers().stream().noneMatch(l -> l.getId().equals(layerId))) {
+            user.getLayers().add(layer);
+            userRepository.save(user);
+        }
+    }
+
+    /** отозвать у пользователя доступ к слою */
+    @Transactional
+    public void revokeLayer(Long userId, Long layerId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("User not found: " + userId));
+
+        if (user.getLayers() != null && user.getLayers().removeIf(l -> l.getId().equals(layerId))) {
+            userRepository.save(user);
+        }
     }
 
     @Transactional
@@ -83,17 +116,15 @@ public class UserService implements UserDetailsService {
     }
 
     private UserDTO convertToDTO(User user) {
+        List<Long> layerIds = user.getLayers() == null
+                ? List.of()
+                : user.getLayers().stream().map(Layer::getId).collect(Collectors.toList());
+
         return new UserDTO(
                 user.getId(),
                 user.getUsername(),
                 user.getRole().name(),
-                user.getLayers().stream()
-                        .map(Layer::getId)
-                        .collect(Collectors.toList())
+                layerIds
         );
-    }
-
-    public UserDTO getUserDTO(User user) {
-        return convertToDTO(user);
     }
 }
