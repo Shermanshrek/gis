@@ -6,13 +6,14 @@ import lombok.NoArgsConstructor;
 import ru.gisback.model.geometry.ObjectGeometry;
 
 import java.util.List;
+import java.util.Map;
 
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
 public class ObjectGeometryDTO {
     private Long id;
-    private String description;
+    private Map<String, String> description;
     private List<Double> points;
     private int dimension;
     private Long layerId;
